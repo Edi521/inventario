@@ -162,3 +162,11 @@ body {
 .rounded-2xl {
     border-radius: var(--radius-xl) !important;
 }
+
+.form-control[readonly],
+.form-control:disabled{
+  background-color: #e9ecef !important; /* gris bootstrap */
+  color: #6c757d !important;           /* texto gris */
+  cursor: not-allowed;
+  opacity: 1; /* para que no se vea “lavado” de más */
+}

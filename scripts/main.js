@@ -24,6 +24,8 @@ const el = {
   submitBtn: document.getElementById('submitBtn'),
 };
 
+el.stockField = el.inputStock.closest(".col-6");
+
 const bs = window.bootstrap; // ✅ en módulos, mejor explícito
 const productModal = bs.Modal.getOrCreateInstance(document.getElementById('productModal'));
 
@@ -39,9 +41,12 @@ function onEdit(product){
   editingProduct = product;
 
   el.modalTitle.textContent = "Editar Producto";
+
   el.inputTitle.value = product.title ?? "";
+  el.inputTitle.disabled = true;     // ✅ bloquea solo en EDIT
+
   el.inputImage.value = product.image_url ?? "";
-  el.inputStock.value = product.stock ?? 0;
+  el.stockField.classList.add("d-none");   // ✅ ocultar stock
   el.inputPrice.value = product.price ?? 0;
 
   productModal.show();
