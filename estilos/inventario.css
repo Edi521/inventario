@@ -1,0 +1,164 @@
+:root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --primary: #6366f1;
+    --secondary: #64748b;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --border: #e2e8f0;
+    --muted-bg: #f1f5f9;
+    --ring: rgba(99, 102, 241, .25);
+    --radius-xl: 1rem;
+    /* ~rounded-2xl */
+    --radius-lg: .75rem;
+    /* ~rounded-xl  */
+    --shadow-soft: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .10);
+}
+
+* {
+    font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Header glass */
+.glass-header {
+    backdrop-filter: blur(14px);
+    background: rgba(248, 250, 252, .9);
+    border-bottom: 1px solid var(--border);
+}
+
+/* Buttons */
+.btn-primary-soft {
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-lg);
+    transition: transform .12s ease, opacity .12s ease;
+}
+
+.btn-primary-soft:hover {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.btn-primary-soft:active {
+    transform: translateY(0) scale(.98);
+}
+
+/* Inputs focus ring */
+.form-control:focus {
+    border-color: rgba(99, 102, 241, .35);
+    box-shadow: 0 0 0 .25rem var(--ring);
+}
+
+/* Cards */
+.product-card {
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: var(--card);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    transition: transform .18s cubic-bezier(.4, 0, .2, 1);
+    animation: fadeIn .35s ease-out;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+}
+
+/* Square image */
+.ratio-1x1 {
+    aspect-ratio: 1 / 1;
+}
+
+.img-fallback {
+    background: var(--muted-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Stock badge pulse */
+.stock-badge.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .7;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stats chips */
+.chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: .5rem .75rem;
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Loading overlay */
+#loadingOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(248, 250, 252, .9);
+    display: none;
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Empty state */
+.empty-icon {
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    background: var(--muted-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem auto;
+}
+
+/* Small helpers */
+.text-secondary-soft {
+    color: var(--secondary) !important;
+}
+
+.bg-muted-soft {
+    background: var(--muted-bg) !important;
+}
+
+.rounded-xl {
+    border-radius: var(--radius-lg) !important;
+}
+
+.rounded-2xl {
+    border-radius: var(--radius-xl) !important;
+}

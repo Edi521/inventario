@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es" class="h-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control de Stock</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="estilos/inventario.css">
+
+</head>
+
+<body class="h-100">
+
+  <!-- Header -->
+  <header class="sticky-top glass-header">
+    <div class="container-lg py-4">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-xl d-flex align-items-center justify-content-center"
+               style="width:40px;height:40px;background:var(--primary);">
+            <!-- cube icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+
+          <h1 id="pageTitle" class="h3 m-0 fw-semibold">Control de Stock</h1>
+        </div>
+
+        <button id="addBtn" class="btn btn-primary-soft text-white px-4 py-2 fw-medium d-flex align-items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nuevo Producto
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <section class="container-lg py-3">
+    <div class="d-flex flex-wrap gap-3">
+      <div class="chip">
+        <span class="text-secondary-soft">Total productos:</span>
+        <span id="totalProducts" class="fw-semibold">0</span>
+      </div>
+      <div class="chip">
+        <span class="text-secondary-soft">Stock bajo:</span>
+        <span id="lowStock" class="fw-semibold" style="color:var(--danger)">0</span>
+      </div>
+      <div class="chip">
+        <span class="text-secondary-soft">Valor total:</span>
+        <span id="totalValue" class="fw-semibold" style="color:var(--success)">$0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main -->
+  <main class="container-lg pb-5">
+
+    <!-- Empty state -->
+    <div id="emptyState" class="text-center py-5 d-none">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </div>
+      <h3 class="h5 fw-semibold mb-2">No hay productos</h3>
+      <p class="text-secondary-soft mb-0">Comienza agregando tu primer producto al inventario</p>
+    </div>
+
+    <!-- Products grid (Bootstrap grid) -->
+    <div id="productsRow" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4"></div>
+
+    <!-- Limit warning -->
+    <div id="limitWarning" class="alert mt-4 text-center d-none"
+         style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:var(--radius-xl);">
+      ⚠️ Has alcanzado el límite máximo de 999 productos
+    </div>
+  </main>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-2xl" style="box-shadow:var(--shadow-soft);">
+        <div class="modal-header border-0 pb-0">
+          <h5 id="modalTitle" class="modal-title fw-semibold">Nuevo Producto</h5>
+          <button type="button" class="btn btn-sm rounded-xl bg-muted-soft" data-bs-dismiss="modal" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body pt-3">
+          <form id="productForm" class="vstack gap-3">
+            <div>
+              <label class="form-label fw-medium">Título del producto</label>
+              <input id="inputTitle" type="text" class="form-control rounded-xl bg-muted-soft" required
+                     placeholder="Ej: Camiseta básica" />
+            </div>
+
+            <div>
+              <label class="form-label fw-medium">URL de imagen (opcional)</label>
+              <input id="inputImage" type="url" class="form-control rounded-xl bg-muted-soft"
+                     placeholder="https://..." />
+            </div>
+
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label fw-medium">Stock</label>
+                <input id="inputStock" type="number" min="0" required class="form-control rounded-xl bg-muted-soft"
+                       placeholder="0" />
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium">Precio</label>
+                <input id="inputPrice" type="number" min="0" step="0.01" required class="form-control rounded-xl bg-muted-soft"
+                       placeholder="0.00" />
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 pt-2">
+              <button type="button" class="btn flex-fill rounded-xl bg-muted-soft text-secondary-soft fw-medium"
+                      data-bs-dismiss="modal">
+                Cancelar
+              </button>
+              <button id="submitBtn" type="submit" class="btn flex-fill text-white fw-medium rounded-xl"
+                      style="background:var(--primary); border:none;">
+                Guardar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="pb-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-2xl text-center" style="box-shadow:var(--shadow-soft);">
+        <div class="modal-body p-4">
+          <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+               style="width:56px;height:56px;background:#fef2f2;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </div>
+
+          <h6 class="fw-semibold mb-2">¿Eliminar producto?</h6>
+          <p class="text-secondary-soft mb-4">Esta acción no se puede deshacer</p>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn flex-fill rounded-xl bg-muted-soft text-secondary-soft fw-medium"
+                    data-bs-dismiss="modal">
+              Cancelar
+            </button>
+            <button id="confirmDeleteBtn" type="button" class="btn flex-fill rounded-xl text-white fw-medium"
+                    style="background:var(--danger); border:none;">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="d-flex flex-column align-items-center">
+      <div class="spinner-border" role="status" aria-label="Cargando..."
+           style="width:40px;height:40px;border-width:4px;border-top-color:var(--primary);">
+      </div>
+      <p class="mt-3 fw-medium text-secondary-soft mb-0">Cargando...</p>
+    </div>
+  </div>
+
+  <!-- Bootstrap bundle (incluye Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="./scripts/main.js"></script>
+
+
+</body>
+</html>
