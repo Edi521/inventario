@@ -49,6 +49,7 @@ export function renderProducts(el, products, currencySymbol, onEdit, onDelete){
 
     const col = document.createElement("div");
     col.className = "col";
+    col.dataset.id = p.__backendId; // ✅
 
     col.innerHTML = `
       <div class="product-card">
@@ -73,8 +74,8 @@ export function renderProducts(el, products, currencySymbol, onEdit, onDelete){
           </div>
 
           <div class="d-flex gap-2">
-            <button class="btn btn-sm flex-fill fw-medium rounded-xl bg-muted-soft text-secondary-soft edit-btn">Editar</button>
-            <button class="btn btn-sm fw-medium rounded-xl delete-btn"
+            <button class="btn btn-sm flex-fill fw-medium rounded-xl bg-muted-soft text-secondary-soft edit-btn" type="button">Editar</button>
+            <button class="btn btn-sm fw-medium rounded-xl delete-btn" type="button"
                     style="background:#fef2f2; color:var(--danger); border:none; width:44px;">🗑️</button>
           </div>
         </div>
