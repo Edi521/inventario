@@ -24,7 +24,7 @@ export function renderStats(el, stats, currencySymbol){
   el.totalValue.textContent = formatMoney(stats.totalVal, currencySymbol);
 }
 
-export function renderProducts(el, products, currencySymbol, onEdit, onDelete){
+export function renderProducts(el, products, currencySymbol, onEdit, onAddStock, onDelete){
   el.productsRow.innerHTML = "";
 
   const hasAny = products.length > 0;
@@ -73,16 +73,28 @@ export function renderProducts(el, products, currencySymbol, onEdit, onDelete){
             </span>
           </div>
 
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm flex-fill fw-medium rounded-xl bg-muted-soft text-secondary-soft edit-btn" type="button">Editar</button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm flex-fill fw-medium rounded-xl bg-muted-soft text-secondary-soft edit-btn" type="button">
+                Editar
+            </button>
+
+            <button class="btn btn-sm fw-medium rounded-xl bg-muted-soft text-secondary-soft add-stock-btn" type="button">
+                + Stock
+            </button>
+
             <button class="btn btn-sm fw-medium rounded-xl delete-btn" type="button"
-                    style="background:#fef2f2; color:var(--danger); border:none; width:44px;">🗑️</button>
-          </div>
+                    style="background:#fef2f2; color:var(--danger); border:none; width:44px;">
+                🗑️
+            </button>
+        </div>
+
         </div>
       </div>`;
 
     col.querySelector(".edit-btn").addEventListener("click", () => onEdit(p));
     col.querySelector(".delete-btn").addEventListener("click", () => onDelete(p));
+    col.querySelector(".add-stock-btn").addEventListener("click", () => onAddStock(p));
+
 
     el.productsRow.appendChild(col);
   });
