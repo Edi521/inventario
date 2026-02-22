@@ -4,6 +4,7 @@ export function setLoading(el, show){
   el.loadingOverlay.style.display = show ? 'flex' : 'none';
 }
 
+//Funcion para definir colores segun el numero de stock
 function stockMeta(stock){
   if (stock === 0) return { color: 'var(--danger)', text: 'Sin stock', pulse: true };
   if (stock <= 5) return { color: 'var(--warning)', text: 'Stock bajo', pulse: true };
