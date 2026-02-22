@@ -20,7 +20,11 @@ let activeCategoryLabel = "Todas";
 
 let activeSort = "none"; // "none" | "stock_desc" | "stock_asc"
 
+// normalizador simple para categorías
 const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+// búsqueda
+let searchQuery = "";
 
 // ============================
 // DOM
@@ -35,9 +39,14 @@ const el = {
   productsRow: document.getElementById('productsRow'),
   limitWarning: document.getElementById('limitWarning'),
   loadingOverlay: document.getElementById('loadingOverlay'),
+
+  // filtro único (categoría + orden)
   filterBtn: document.getElementById("filterBtn"),
   filterLabel: document.getElementById("filterLabel"),
   filterMenu: document.getElementById("filterMenu"),
+
+  // buscador
+  searchInput: document.getElementById("searchInput"),
 
   // Delete modal (2 pasos)
   deleteStep1: document.getElementById("deleteStep1"),
@@ -73,13 +82,34 @@ const productModal = bs.Modal.getOrCreateInstance(document.getElementById('produ
 const stockModal = bs.Modal.getOrCreateInstance(document.getElementById("stockModal"));
 const deleteModal = bs.Modal.getOrCreateInstance(document.getElementById("deleteModal"));
 
+//============================
+// Normalizar texto para búsqueda (quita acentos)
+//============================
+function normText(s){
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 //============================
-//Filtrado helpers
+// Filtrado + orden (dropdown único)
 //============================
+function updateFilterLabel(){
+  const sortText =
+    activeSort === "stock_desc" ? "Stock ↓" :
+    activeSort === "stock_asc"  ? "Stock ↑" :
+    "Sin orden";
+
+  el.filterLabel.textContent = `${activeCategoryLabel} · ${sortText}`;
+}
+
 function buildFilterMenu(){
   // Map key(normalizado) -> label (original)
   const map = new Map();
+
   for (const p of state.products){
     const label = String(p.category ?? "").trim();
     if (!label) continue;
@@ -94,9 +124,9 @@ function buildFilterMenu(){
   el.filterMenu.innerHTML = `
     <!-- Orden -->
     <li class="px-3 py-1 small text-secondary">Ordenar por stock</li>
-    <li><button class="dropdown-item" type="button" data-sort="none" data-sortlabel="Ninguno">Ninguno</button></li>
-    <li><button class="dropdown-item" type="button" data-sort="stock_desc" data-sortlabel="Stock: mayor → menor">Stock: mayor → menor</button></li>
-    <li><button class="dropdown-item" type="button" data-sort="stock_asc" data-sortlabel="Stock: menor → mayor">Stock: menor → mayor</button></li>
+    <li><button class="dropdown-item" type="button" data-sort="none">Ninguno</button></li>
+    <li><button class="dropdown-item" type="button" data-sort="stock_desc">Stock: mayor → menor</button></li>
+    <li><button class="dropdown-item" type="button" data-sort="stock_asc">Stock: menor → mayor</button></li>
 
     <li><hr class="dropdown-divider"></li>
 
@@ -114,17 +144,22 @@ function buildFilterMenu(){
     activeCategoryLabel = "Todas";
   }
 
-  // Actualiza el texto del botón
   updateFilterLabel();
 }
 
 function getVisibleProducts(){
-  // 1) Filtrar categoría
+  // 1) Filtrar por categoría
   let list = (activeCategoryKey === "__all__")
     ? [...state.products]
     : state.products.filter(p => norm(p.category) === activeCategoryKey);
 
-  // 2) Ordenar por stock
+  // 2) Filtrar por búsqueda (nombre del producto)
+  const q = normText(searchQuery);
+  if (q) {
+    list = list.filter(p => normText(p.title).includes(q));
+  }
+
+  // 3) Ordenar por stock
   if (activeSort === "stock_asc") {
     list.sort((a,b) => (a.stock ?? 0) - (b.stock ?? 0));
   } else if (activeSort === "stock_desc") {
@@ -133,17 +168,6 @@ function getVisibleProducts(){
 
   return list;
 }
-
-function updateFilterLabel(){
-  const sortText =
-    activeSort === "stock_desc" ? "Stock ↓" :
-    activeSort === "stock_asc" ? "Stock ↑" :
-    "Sin orden";
-
-  el.filterLabel.textContent = `${activeCategoryLabel} · ${sortText}`;
-}
-
-
 
 // ============================
 // UI helpers
@@ -248,7 +272,6 @@ function onEdit(product) {
   el.inputTitle.disabled = true;
   el.inputTitle.classList.add("bg-light", "text-secondary");
 
-  // Categoría editable (si quieres bloquearla: disabled=true + bg-light)
   el.inputCategory.value = product.category ?? "";
   el.inputCategory.disabled = false;
   el.inputCategory.classList.remove("bg-light", "text-secondary");
@@ -269,7 +292,6 @@ function onDelete(product){
   deletingProduct = product;
   deleteStep = 1;
 
-  // paso 1 visible
   el.deleteStep1.classList.remove("d-none");
   el.deleteStep2.classList.add("d-none");
 
@@ -286,7 +308,6 @@ function onDelete(product){
 async function handleConfirmDelete(){
   if (!deletingProduct) return;
 
-  // Paso 1 -> Paso 2
   if (deleteStep === 1) {
     deleteStep = 2;
 
@@ -294,12 +315,11 @@ async function handleConfirmDelete(){
     el.deleteStep2.classList.remove("d-none");
 
     el.confirmDeleteBtn.textContent = "Eliminar";
-    el.confirmDeleteBtn.disabled = true; // se habilita al escribir ELIMINAR
+    el.confirmDeleteBtn.disabled = true;
     el.deleteConfirmInput.focus();
     return;
   }
 
-  // Paso 2: validar texto
   const typed = el.deleteConfirmInput.value.trim().toUpperCase();
   if (typed !== "ELIMINAR") {
     alert('Escribe "ELIMINAR" para confirmar.');
@@ -325,7 +345,6 @@ async function handleConfirmDelete(){
     console.error(err);
     alert("No se pudo eliminar: " + err.message);
   } finally {
-    // si sigue abierto, restablece según estado actual
     if (deleteStep === 2) {
       el.confirmDeleteBtn.textContent = "Eliminar";
       el.confirmDeleteBtn.disabled = (el.deleteConfirmInput.value.trim().toUpperCase() !== "ELIMINAR");
@@ -423,12 +442,14 @@ async function init() {
 
     const list = await fetchProducts();
     setProducts(list);
+
     buildFilterMenu();
-    el.filterLabel.textContent = activeCategoryLabel;
     refreshUI();
+
   } catch (err) {
     console.error(err);
     setProducts([]);
+    buildFilterMenu();
     refreshUI();
   } finally {
     setLoading(el, false);
@@ -442,6 +463,8 @@ el.addBtn.addEventListener("click", openAddModal);
 el.productForm.addEventListener('submit', handleSubmit);
 el.confirmAddStockBtn.addEventListener("click", handleAddStock);
 el.confirmDeleteBtn.addEventListener("click", handleConfirmDelete);
+
+// ✅ dropdown único: categoría + orden
 el.filterMenu.addEventListener("click", (e) => {
   const sortBtn = e.target.closest("button[data-sort]");
   if (sortBtn){
@@ -458,6 +481,12 @@ el.filterMenu.addEventListener("click", (e) => {
     updateFilterLabel();
     refreshUI();
   }
+});
+
+// ✅ buscador en vivo
+el.searchInput.addEventListener("input", () => {
+  searchQuery = el.searchInput.value;
+  refreshUI();
 });
 
 // Go
