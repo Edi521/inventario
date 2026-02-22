@@ -4,6 +4,7 @@ import { state, setProducts, calcStats } from './store.js';
 import { renderProducts, renderStats, setLoading } from './ui.js';
 
 let stockTargetProduct = null;
+let stockMode = "add"; // "add" | "sub"
 
 const el = {
   pageTitle: document.getElementById('pageTitle'),
@@ -29,6 +30,7 @@ const el = {
   stockProductName: document.getElementById("stockProductName"),
   inputStockDelta: document.getElementById("inputStockDelta"),
   confirmAddStockBtn: document.getElementById("confirmAddStockBtn"),
+  stockModalTitle: document.getElementById("stockModalTitle"),
 };
 
 el.stockField = el.inputStock.closest(".col-6");
@@ -41,12 +43,23 @@ let cfg = getConfig();
 let editingProduct = null;
 
 function refreshUI(){
-  renderProducts(el, state.products, cfg.currency_symbol, onEdit, onAddStock, onDelete);
+  renderProducts(el, state.products, cfg.currency_symbol, onEdit, onAddStock, onSubStock, onDelete);
   renderStats(el, calcStats(state.products), cfg.currency_symbol);
 }
 
 function onAddStock(product){
+  openStockModal(product, "add");
+}
+
+function onSubStock(product){
+  openStockModal(product, "sub");
+}
+
+function openStockModal(product, mode){
   stockTargetProduct = product;
+  stockMode = mode;
+
+  el.stockModalTitle.textContent = (mode === "add") ? "Agregar stock" : "Disminuir stock";
   el.stockProductName.textContent = product.title ?? "—";
   el.inputStockDelta.value = "";
   stockModal.show();
@@ -130,32 +143,41 @@ async function handleAddStock(){
   }
 
   el.confirmAddStockBtn.disabled = true;
-  el.confirmAddStockBtn.textContent = "Sumando...";
+  el.confirmAddStockBtn.textContent = "Aplicando...";
 
   try {
-    // ✅ (opcional pero recomendable) refresca para tomar el stock más reciente
+    // Tomar stock más reciente (recomendado)
     const fresh = await fetchProducts();
     const current = fresh.find(p => p.sheetProducto === stockTargetProduct.sheetProducto);
     const currentStock = current?.stock ?? stockTargetProduct.stock ?? 0;
 
-    const newStock = currentStock + delta;
+    const newStock = currentStock + (stockMode === "add" ? delta : -delta);
+
+    // ✅ Evitar negativos (y NO guardar)
+    if (newStock < 0) {
+      alert("No puedes dejar el stock en negativo.");
+      return; // sale del try, y el finally re-habilita el botón
+    }
 
     await apiUpdateProducto(stockTargetProduct.sheetProducto, { INVENTARIO: newStock });
 
-    // refresca UI
+    // refrescar UI
     setProducts(await fetchProducts());
     refreshUI();
 
     stockModal.hide();
     stockTargetProduct = null;
+
   } catch (err) {
     console.error(err);
-    alert("No se pudo sumar stock: " + err.message);
+    alert("No se pudo actualizar stock: " + err.message);
   } finally {
     el.confirmAddStockBtn.disabled = false;
-    el.confirmAddStockBtn.textContent = "Sumar";
+    el.confirmAddStockBtn.textContent = "Aceptar";
   }
 }
+
+el.confirmAddStockBtn.addEventListener("click", handleAddStock);
 
 async function init(){
   setLoading(el, true);

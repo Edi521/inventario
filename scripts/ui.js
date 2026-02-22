@@ -24,7 +24,7 @@ export function renderStats(el, stats, currencySymbol){
   el.totalValue.textContent = formatMoney(stats.totalVal, currencySymbol);
 }
 
-export function renderProducts(el, products, currencySymbol, onEdit, onAddStock, onDelete){
+export function renderProducts(el, products, currencySymbol, onEdit, onAddStock, onSubStock, onDelete){
   el.productsRow.innerHTML = "";
 
   const hasAny = products.length > 0;
@@ -82,6 +82,10 @@ export function renderProducts(el, products, currencySymbol, onEdit, onAddStock,
                 + Stock
             </button>
 
+            <button class="btn btn-sm fw-medium rounded-xl bg-muted-soft text-secondary-soft sub-stock-btn" type="button">
+                - Stock
+            </button>
+
             <button class="btn btn-sm fw-medium rounded-xl delete-btn" type="button"
                     style="background:#fef2f2; color:var(--danger); border:none; width:44px;">
                 🗑️
@@ -92,8 +96,9 @@ export function renderProducts(el, products, currencySymbol, onEdit, onAddStock,
       </div>`;
 
     col.querySelector(".edit-btn").addEventListener("click", () => onEdit(p));
-    col.querySelector(".delete-btn").addEventListener("click", () => onDelete(p));
     col.querySelector(".add-stock-btn").addEventListener("click", () => onAddStock(p));
+    col.querySelector(".sub-stock-btn").addEventListener("click", () => onSubStock(p));
+    col.querySelector(".delete-btn").addEventListener("click", () => onDelete(p));
 
 
     el.productsRow.appendChild(col);
