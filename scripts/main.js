@@ -15,6 +15,13 @@ let stockMode = "add"; // "add" | "sub"
 let deletingProduct = null;
 let deleteStep = 1; // 1 o 2
 
+let activeCategoryKey = "__all__";
+let activeCategoryLabel = "Todas";
+
+let activeSort = "none"; // "none" | "stock_desc" | "stock_asc"
+
+const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
 // ============================
 // DOM
 // ============================
@@ -28,6 +35,9 @@ const el = {
   productsRow: document.getElementById('productsRow'),
   limitWarning: document.getElementById('limitWarning'),
   loadingOverlay: document.getElementById('loadingOverlay'),
+  filterBtn: document.getElementById("filterBtn"),
+  filterLabel: document.getElementById("filterLabel"),
+  filterMenu: document.getElementById("filterMenu"),
 
   // Delete modal (2 pasos)
   deleteStep1: document.getElementById("deleteStep1"),
@@ -63,12 +73,85 @@ const productModal = bs.Modal.getOrCreateInstance(document.getElementById('produ
 const stockModal = bs.Modal.getOrCreateInstance(document.getElementById("stockModal"));
 const deleteModal = bs.Modal.getOrCreateInstance(document.getElementById("deleteModal"));
 
+
+//============================
+//Filtrado helpers
+//============================
+function buildFilterMenu(){
+  // Map key(normalizado) -> label (original)
+  const map = new Map();
+  for (const p of state.products){
+    const label = String(p.category ?? "").trim();
+    if (!label) continue;
+    const key = norm(label);
+    if (!map.has(key)) map.set(key, label);
+  }
+
+  const entries = [...map.entries()].sort((a,b) =>
+    a[1].localeCompare(b[1], 'es', { sensitivity: 'base' })
+  );
+
+  el.filterMenu.innerHTML = `
+    <!-- Orden -->
+    <li class="px-3 py-1 small text-secondary">Ordenar por stock</li>
+    <li><button class="dropdown-item" type="button" data-sort="none" data-sortlabel="Ninguno">Ninguno</button></li>
+    <li><button class="dropdown-item" type="button" data-sort="stock_desc" data-sortlabel="Stock: mayor → menor">Stock: mayor → menor</button></li>
+    <li><button class="dropdown-item" type="button" data-sort="stock_asc" data-sortlabel="Stock: menor → mayor">Stock: menor → mayor</button></li>
+
+    <li><hr class="dropdown-divider"></li>
+
+    <!-- Categorías -->
+    <li class="px-3 py-1 small text-secondary">Categoría</li>
+    <li><button class="dropdown-item" type="button" data-cat="__all__" data-catlabel="Todas">Todas</button></li>
+    ${entries.map(([key,label]) => `
+      <li><button class="dropdown-item" type="button" data-cat="${key}" data-catlabel="${label}">${label}</button></li>
+    `).join("")}
+  `;
+
+  // Si la categoría activa ya no existe, vuelve a Todas
+  if (activeCategoryKey !== "__all__" && !map.has(activeCategoryKey)){
+    activeCategoryKey = "__all__";
+    activeCategoryLabel = "Todas";
+  }
+
+  // Actualiza el texto del botón
+  updateFilterLabel();
+}
+
+function getVisibleProducts(){
+  // 1) Filtrar categoría
+  let list = (activeCategoryKey === "__all__")
+    ? [...state.products]
+    : state.products.filter(p => norm(p.category) === activeCategoryKey);
+
+  // 2) Ordenar por stock
+  if (activeSort === "stock_asc") {
+    list.sort((a,b) => (a.stock ?? 0) - (b.stock ?? 0));
+  } else if (activeSort === "stock_desc") {
+    list.sort((a,b) => (b.stock ?? 0) - (a.stock ?? 0));
+  }
+
+  return list;
+}
+
+function updateFilterLabel(){
+  const sortText =
+    activeSort === "stock_desc" ? "Stock ↓" :
+    activeSort === "stock_asc" ? "Stock ↑" :
+    "Sin orden";
+
+  el.filterLabel.textContent = `${activeCategoryLabel} · ${sortText}`;
+}
+
+
+
 // ============================
 // UI helpers
 // ============================
-function refreshUI() {
-  renderProducts(el, state.products, cfg.currency_symbol, onEdit, onAddStock, onSubStock, onDelete);
-  renderStats(el, calcStats(state.products), cfg.currency_symbol);
+function refreshUI(){
+  const visible = getVisibleProducts();
+  renderProducts(el, visible, cfg.currency_symbol, onEdit, onAddStock, onSubStock, onDelete);
+  renderStats(el, calcStats(visible), cfg.currency_symbol);
 }
 
 // ============================
@@ -119,6 +202,7 @@ async function handleAddStock() {
     await apiUpdateProducto(stockTargetProduct.sheetProducto, { INVENTARIO: newStock });
 
     setProducts(await fetchProducts());
+    buildFilterMenu();
     refreshUI();
 
     stockModal.hide();
@@ -230,6 +314,7 @@ async function handleConfirmDelete(){
     await apiDeleteProducto(productoKey);
 
     setProducts(await fetchProducts());
+    buildFilterMenu();
     refreshUI();
 
     deleteModal.hide();
@@ -312,6 +397,7 @@ async function handleSubmit(e) {
     }
 
     setProducts(await fetchProducts());
+    buildFilterMenu();
     refreshUI();
 
     productModal.hide();
@@ -337,6 +423,8 @@ async function init() {
 
     const list = await fetchProducts();
     setProducts(list);
+    buildFilterMenu();
+    el.filterLabel.textContent = activeCategoryLabel;
     refreshUI();
   } catch (err) {
     console.error(err);
@@ -354,6 +442,23 @@ el.addBtn.addEventListener("click", openAddModal);
 el.productForm.addEventListener('submit', handleSubmit);
 el.confirmAddStockBtn.addEventListener("click", handleAddStock);
 el.confirmDeleteBtn.addEventListener("click", handleConfirmDelete);
+el.filterMenu.addEventListener("click", (e) => {
+  const sortBtn = e.target.closest("button[data-sort]");
+  if (sortBtn){
+    activeSort = sortBtn.dataset.sort;
+    updateFilterLabel();
+    refreshUI();
+    return;
+  }
+
+  const catBtn = e.target.closest("button[data-cat]");
+  if (catBtn){
+    activeCategoryKey = catBtn.dataset.cat;
+    activeCategoryLabel = catBtn.dataset.catlabel;
+    updateFilterLabel();
+    refreshUI();
+  }
+});
 
 // Go
 init();
