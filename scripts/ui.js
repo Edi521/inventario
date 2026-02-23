@@ -114,7 +114,7 @@ export function renderProducts(el, products, currencySymbol, onEdit, onAddStock,
           <div class="d-flex align-items-start justify-content-between gap-2">
             <h3 class="h6 fw-semibold mb-2 text-truncate" style="max-width:70%;">${escapeHtml(p.title)}</h3>
             <span class="small fw-medium px-2 py-1 rounded"
-                  style="background:var(--muted-bg); color:var(--secondary);">${p.stock} uds</span>
+                  style="background:var(--muted-bg); color:var(--secondary);">${p.stock} pz</span>
           </div>
 
           <!-- Precio -->
