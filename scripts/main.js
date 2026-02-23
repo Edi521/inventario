@@ -256,8 +256,12 @@ function openAddModal() {
   el.inputCategory.disabled = false;
   el.inputCategory.classList.remove("bg-light", "text-secondary");
 
-  // mostrar stock en "nuevo"
+  // ✅ mostrar stock en "nuevo"
   el.stockField?.classList.remove("d-none");
+
+  // ✅ volver a activar validación del stock
+  el.inputStock.disabled = false;
+  el.inputStock.required = true;
 
   productModal.show();
 }
@@ -279,8 +283,12 @@ function onEdit(product) {
   el.inputImage.value = product.image_url ?? "";
   el.inputPrice.value = product.price ?? 0;
 
-  // ocultar stock en editar
+  // ✅ ocultar stock en editar
   el.stockField?.classList.add("d-none");
+
+  // ✅ IMPORTANTE: quitar validación del stock al editar
+  el.inputStock.required = false;
+  el.inputStock.disabled = true;
 
   productModal.show();
 }
@@ -388,8 +396,13 @@ async function handleSubmit(e) {
 
   if (!newTitle) { alert("Escribe un nombre de producto"); return; }
   if (!newCategory) { alert("Escribe una categoría"); return; }
-  if (newStock < 0) { alert("El stock no puede ser negativo"); return; }
   if (newPrice < 0) { alert("El precio no puede ser negativo"); return; }
+
+  // ✅ solo validar stock cuando es nuevo producto
+  if (!editingProduct && newStock < 0) {
+    alert("El stock no puede ser negativo");
+    return;
+  }
 
   el.submitBtn.disabled = true;
   el.submitBtn.textContent = "Guardando...";
